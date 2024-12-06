@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { addMonths, subMonths, startOfMonth, isSameDay, isWeekend } from 'date-fns';
+import { addMonths, subMonths, startOfMonth, isSameDay, isWeekend, startOfYear, endOfYear } from 'date-fns';
 import { WorkStatus, DayStatus } from '../types/calendar';
 import { getNationalHolidays, getMadridHolidays } from '../utils/holidays';
 import { supabase, DayStatusRecord } from '../lib/supabase';
@@ -33,7 +33,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
   setDayStatus: async (date: Date, status: WorkStatus) => {
     try {
       set({ isLoading: true, error: null });
-      const dateStr = date.toISOString();
+      const dateStr = date.toISOString().split('T')[0]; // Store only the date part
 
       const { error } = await supabase
         .from('day_statuses')
@@ -66,9 +66,10 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     const isHoliday = [...nationalHolidays, ...madridHolidays]
       .some(holiday => isSameDay(date, holiday));
 
+    const dateStr = date.toISOString().split('T')[0];
     return {
       date,
-      status: dayStatuses.get(date.toISOString()) || 'office',
+      status: dayStatuses.get(dateStr) || 'office',
       isWeekend: isWeekend(date),
       isHoliday
     };
@@ -78,15 +79,23 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
+      // Fetch data for the entire year to support statistics
+      const startDate = startOfYear(new Date()).toISOString().split('T')[0];
+      const endDate = endOfYear(new Date()).toISOString().split('T')[0];
+
       const { data, error } = await supabase
         .from('day_statuses')
-        .select('*');
+        .select('*')
+        .gte('date', startDate)
+        .lte('date', endDate);
 
       if (error) throw error;
 
       const statusMap = new Map<string, WorkStatus>();
       (data as DayStatusRecord[]).forEach(record => {
-        statusMap.set(record.date, record.status as WorkStatus);
+        // Store only the date part as the key
+        const dateStr = new Date(record.date).toISOString().split('T')[0];
+        statusMap.set(dateStr, record.status as WorkStatus);
       });
 
       set({ 
@@ -94,6 +103,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
         isLoading: false 
       });
     } catch (error) {
+      console.error('Error fetching day statuses:', error);
       set({ 
         error: error instanceof Error ? error.message : 'An error occurred',
         isLoading: false 

@@ -44,8 +44,8 @@ export const CalendarDay: React.FC<CalendarDayProps> = ({ date }) => {
 
   const handleStatusChange = async () => {
     if (isWeekend || isHoliday || isLoading) return;
-    const statusOrder: WorkStatus[] = ['office', 'remote', 'vacation', 'holiday'];
-    const currentIndex = statusOrder.indexOf(status);
+    const statusOrder: WorkStatus[] = ['office', 'remote', 'vacation'];
+    const currentIndex = statusOrder.indexOf(status as WorkStatus);
     const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
     await setDayStatus(date, nextStatus);
   };
