@@ -36,18 +36,18 @@ const StatusIcon: React.FC<{ status: WorkStatus }> = ({ status }) => {
 };
 
 export const CalendarDay: React.FC<CalendarDayProps> = ({ date }) => {
-  const { currentDate, getDayStatus, setDayStatus } = useCalendarStore();
+  const { currentDate, getDayStatus, setDayStatus, isLoading } = useCalendarStore();
   const { status, isWeekend, isHoliday } = getDayStatus(date);
   
   const isCurrentMonth = isSameMonth(date, currentDate);
   const dayNumber = format(date, 'd');
 
-  const handleStatusChange = () => {
-    if (isWeekend || isHoliday) return;
+  const handleStatusChange = async () => {
+    if (isWeekend || isHoliday || isLoading) return;
     const statusOrder: WorkStatus[] = ['office', 'remote', 'vacation', 'holiday'];
     const currentIndex = statusOrder.indexOf(status);
     const nextStatus = statusOrder[(currentIndex + 1) % statusOrder.length];
-    setDayStatus(date, nextStatus);
+    await setDayStatus(date, nextStatus);
   };
 
   if (!isCurrentMonth) {
@@ -59,11 +59,12 @@ export const CalendarDay: React.FC<CalendarDayProps> = ({ date }) => {
   return (
     <button
       onClick={handleStatusChange}
-      disabled={isWeekend || isHoliday}
+      disabled={isWeekend || isHoliday || isLoading}
       className={`
         h-24 p-2 rounded-lg flex flex-col items-center justify-start gap-2
         ${backgroundColor}
         transition-colors duration-200
+        ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
       `}
     >
       <span className="text-sm font-semibold text-gray-800">

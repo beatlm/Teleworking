@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   format,
   startOfMonth,
@@ -15,7 +15,11 @@ import { CalendarDay } from './CalendarDay';
 import { QuarterlyStats } from './QuarterlyStats';
 
 export const Calendar: React.FC = () => {
-  const { currentDate, nextMonth, previousMonth } = useCalendarStore();
+  const { currentDate, nextMonth, previousMonth, fetchDayStatuses, isLoading, error } = useCalendarStore();
+
+  useEffect(() => {
+    fetchDayStatuses();
+  }, [fetchDayStatuses]);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -28,14 +32,29 @@ export const Calendar: React.FC = () => {
     end: addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 6)
   });
 
+  if (error) {
+    return (
+      <div className="text-red-600 text-center p-4">
+        Error: {error}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-4">
+      {isLoading && (
+        <div className="text-center text-gray-600 mb-4">
+          Cargando...
+        </div>
+      )}
+      
       <QuarterlyStats />
       
       <div className="flex items-center justify-between mb-8 mt-6">
         <button
           onClick={previousMonth}
           className="p-2 hover:bg-gray-100 rounded-full"
+          disabled={isLoading}
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
@@ -45,6 +64,7 @@ export const Calendar: React.FC = () => {
         <button
           onClick={nextMonth}
           className="p-2 hover:bg-gray-100 rounded-full"
+          disabled={isLoading}
         >
           <ChevronRight className="w-6 h-6" />
         </button>
