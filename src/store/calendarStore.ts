@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { addMonths, subMonths, startOfMonth, isSameDay, isWeekend, startOfYear, endOfYear } from 'date-fns';
+import { addMonths, subMonths, startOfMonth, isSameDay, isWeekend, startOfYear, endOfYear, format } from 'date-fns';
 import { WorkStatus, DayStatus } from '../types/calendar';
 import { getNationalHolidays, getMadridHolidays } from '../utils/holidays';
 import { supabase, DayStatusRecord } from '../lib/supabase';
@@ -33,7 +33,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
   setDayStatus: async (date: Date, status: WorkStatus) => {
     try {
       set({ isLoading: true, error: null });
-      const dateStr = date.toISOString().split('T')[0]; // Store only the date part
+      const dateStr = format(date, 'yyyy-MM-dd');
 
       const { error } = await supabase
         .from('day_statuses')
@@ -55,6 +55,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
         error: error instanceof Error ? error.message : 'An error occurred',
         isLoading: false 
       });
+      console.error('Error setting day status:', error);
     }
   },
 
@@ -66,10 +67,12 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     const isHoliday = [...nationalHolidays, ...madridHolidays]
       .some(holiday => isSameDay(date, holiday));
 
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const status = dayStatuses.get(dateStr);
+
     return {
       date,
-      status: dayStatuses.get(dateStr) || 'office',
+      status: status || 'office',
       isWeekend: isWeekend(date),
       isHoliday
     };
@@ -79,9 +82,8 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      // Fetch data for the entire year to support statistics
-      const startDate = startOfYear(new Date()).toISOString().split('T')[0];
-      const endDate = endOfYear(new Date()).toISOString().split('T')[0];
+      const startDate = format(startOfYear(new Date()), 'yyyy-MM-dd');
+      const endDate = format(endOfYear(new Date()), 'yyyy-MM-dd');
 
       const { data, error } = await supabase
         .from('day_statuses')
@@ -93,9 +95,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
 
       const statusMap = new Map<string, WorkStatus>();
       (data as DayStatusRecord[]).forEach(record => {
-        // Store only the date part as the key
-        const dateStr = new Date(record.date).toISOString().split('T')[0];
-        statusMap.set(dateStr, record.status as WorkStatus);
+        statusMap.set(record.date, record.status as WorkStatus);
       });
 
       set({ 

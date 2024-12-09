@@ -1,4 +1,4 @@
-import { startOfQuarter, endOfQuarter, eachDayOfInterval, isSameDay, isWeekend } from 'date-fns';
+import { startOfQuarter, endOfQuarter, eachDayOfInterval, isSameDay, isWeekend, format } from 'date-fns';
 import { WorkStatus } from '../types/calendar';
 import { getNationalHolidays, getMadridHolidays } from './holidays';
 
@@ -14,9 +14,10 @@ export const getQuarterlyRemoteStats = (dayStatuses: Map<string, WorkStatus>): R
     const workDays = eachDayOfInterval({ start: startDate, end: endDate })
       .filter(date => !isWeekend(date) && !holidays.some(holiday => isSameDay(date, holiday)));
     
-    const remoteDays = workDays.filter(date => 
-      dayStatuses.get(date.toISOString()) === 'remote'
-    ).length;
+    const remoteDays = workDays.filter(date => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      return dayStatuses.get(dateStr) === 'remote';
+    }).length;
 
     acc[quarter] = workDays.length > 0 ? (remoteDays / workDays.length) * 100 : 0;
     return acc;
