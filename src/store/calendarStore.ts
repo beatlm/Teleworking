@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { addMonths, subMonths, startOfMonth, isSameDay, isWeekend, startOfYear, endOfYear, format } from 'date-fns';
 import { WorkStatus, DayStatus } from '../types/calendar';
 import { getNationalHolidays, getMadridHolidays } from '../utils/holidays';
-import { supabase, DayStatusRecord } from '../lib/supabase';
+import { supabase, DayStatusRecord, formatDateForDB, parseDateFromDB } from '../lib/supabase';
 
 interface CalendarState {
   currentDate: Date;
@@ -33,26 +33,27 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
   setDayStatus: async (date: Date, status: WorkStatus) => {
     try {
       set({ isLoading: true, error: null });
-      const dateStr = format(date, 'yyyy-MM-dd');
+      const formattedDate = formatDateForDB(date);
 
-      const { error } = await supabase
+      const { error: upsertError } = await supabase
         .from('day_statuses')
         .upsert({
-          date: dateStr,
+          date: formattedDate,
           status: status
         }, {
           onConflict: 'date'
         });
 
-      if (error) throw error;
+      if (upsertError) throw upsertError;
 
+      const dateKey = format(date, 'yyyy-MM-dd');
       set((state) => ({
-        dayStatuses: new Map(state.dayStatuses).set(dateStr, status),
+        dayStatuses: new Map(state.dayStatuses).set(dateKey, status),
         isLoading: false
       }));
     } catch (error) {
       set({ 
-        error: error instanceof Error ? error.message : 'An error occurred',
+        error: error instanceof Error ? error.message : 'Error al actualizar el estado del día',
         isLoading: false 
       });
       console.error('Error setting day status:', error);
@@ -67,8 +68,8 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     const isHoliday = [...nationalHolidays, ...madridHolidays]
       .some(holiday => isSameDay(date, holiday));
 
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const status = dayStatuses.get(dateStr);
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const status = dayStatuses.get(dateKey);
 
     return {
       date,
@@ -82,8 +83,8 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
 
-      const startDate = format(startOfYear(new Date()), 'yyyy-MM-dd');
-      const endDate = format(endOfYear(new Date()), 'yyyy-MM-dd');
+      const startDate = formatDateForDB(startOfYear(new Date()));
+      const endDate = formatDateForDB(endOfYear(new Date()));
 
       const { data, error } = await supabase
         .from('day_statuses')
@@ -95,7 +96,8 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
 
       const statusMap = new Map<string, WorkStatus>();
       (data as DayStatusRecord[]).forEach(record => {
-        statusMap.set(record.date, record.status as WorkStatus);
+        const dateKey = format(parseDateFromDB(record.date), 'yyyy-MM-dd');
+        statusMap.set(dateKey, record.status as WorkStatus);
       });
 
       set({ 
@@ -105,7 +107,7 @@ export const useCalendarStore = create<CalendarState>((set, get) => ({
     } catch (error) {
       console.error('Error fetching day statuses:', error);
       set({ 
-        error: error instanceof Error ? error.message : 'An error occurred',
+        error: error instanceof Error ? error.message : 'Error al cargar los datos',
         isLoading: false 
       });
     }

@@ -9,7 +9,7 @@ import {
   endOfWeek
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useCalendarStore } from '../store/calendarStore';
 import { CalendarDay } from './CalendarDay';
 import { QuarterlyStats } from './QuarterlyStats';
@@ -19,7 +19,7 @@ export const Calendar: React.FC = () => {
 
   useEffect(() => {
     fetchDayStatuses();
-  }, [fetchDayStatuses]);
+  }, []);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -34,8 +34,15 @@ export const Calendar: React.FC = () => {
 
   if (error) {
     return (
-      <div className="text-red-600 text-center p-4">
-        Error: {error}
+      <div className="text-red-600 text-center p-4 bg-red-50 rounded-lg">
+        <p className="font-semibold">Error al cargar los datos</p>
+        <p className="text-sm mt-2">{error}</p>
+        <button 
+          onClick={() => fetchDayStatuses()}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
@@ -43,8 +50,11 @@ export const Calendar: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-4">
       {isLoading && (
-        <div className="text-center text-gray-600 mb-4">
-          Cargando...
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-lg shadow-xl flex items-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span className="text-gray-700">Cargando datos...</span>
+          </div>
         </div>
       )}
       
@@ -53,17 +63,17 @@ export const Calendar: React.FC = () => {
       <div className="flex items-center justify-between mb-8 mt-6">
         <button
           onClick={previousMonth}
-          className="p-2 hover:bg-gray-100 rounded-full"
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           disabled={isLoading}
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-semibold">
+        <h2 className="text-2xl font-semibold capitalize">
           {format(currentDate, 'MMMM yyyy', { locale: es })}
         </h2>
         <button
           onClick={nextMonth}
-          className="p-2 hover:bg-gray-100 rounded-full"
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           disabled={isLoading}
         >
           <ChevronRight className="w-6 h-6" />
