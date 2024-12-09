@@ -4,9 +4,11 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  addDays,
   startOfWeek,
-  endOfWeek
+  endOfWeek,
+  getQuarter,
+  startOfQuarter,
+  isSameMonth
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
@@ -28,9 +30,12 @@ export const Calendar: React.FC = () => {
 
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const weekDays = eachDayOfInterval({
-    start: startOfWeek(new Date(), { weekStartsOn: 1 }),
-    end: addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), 6)
+    start: calendarStart,
+    end: endOfWeek(calendarStart, { weekStartsOn: 1 })
   });
+
+  const currentQuarter = getQuarter(currentDate);
+  const quarterStart = startOfQuarter(currentDate);
 
   if (error) {
     return (
@@ -60,7 +65,7 @@ export const Calendar: React.FC = () => {
       
       <QuarterlyStats />
       
-      <div className="flex items-center justify-between mb-8 mt-6">
+      <div className="flex items-center justify-between mb-8">
         <button
           onClick={previousMonth}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -68,9 +73,14 @@ export const Calendar: React.FC = () => {
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-semibold capitalize">
-          {format(currentDate, 'MMMM yyyy', { locale: es })}
-        </h2>
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold capitalize">
+            {format(currentDate, 'MMMM yyyy', { locale: es })}
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {currentQuarter}º Trimestre
+          </p>
+        </div>
         <button
           onClick={nextMonth}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -93,7 +103,11 @@ export const Calendar: React.FC = () => {
 
       <div className="grid grid-cols-7 gap-2">
         {days.map((day) => (
-          <CalendarDay key={day.toString()} date={day} />
+          <CalendarDay 
+            key={day.toString()} 
+            date={day} 
+            isOutsideMonth={!isSameMonth(day, currentDate)}
+          />
         ))}
       </div>
     </div>

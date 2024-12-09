@@ -1,11 +1,12 @@
 import React from 'react';
-import { format, isSameMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { useCalendarStore } from '../store/calendarStore';
 import { WorkStatus } from '../types/calendar';
 import { Home, Computer, Sun } from 'lucide-react';
 
 interface CalendarDayProps {
   date: Date;
+  isOutsideMonth: boolean;
 }
 
 const getBackgroundColor = (status: WorkStatus, isWeekend: boolean, isHoliday: boolean): string => {
@@ -35,11 +36,10 @@ const StatusIcon: React.FC<{ status: WorkStatus }> = ({ status }) => {
   }
 };
 
-export const CalendarDay: React.FC<CalendarDayProps> = ({ date }) => {
-  const { currentDate, getDayStatus, setDayStatus, isLoading } = useCalendarStore();
+export const CalendarDay: React.FC<CalendarDayProps> = ({ date, isOutsideMonth }) => {
+  const { getDayStatus, setDayStatus, isLoading } = useCalendarStore();
   const { status, isWeekend, isHoliday } = getDayStatus(date);
   
-  const isCurrentMonth = isSameMonth(date, currentDate);
   const dayNumber = format(date, 'd');
 
   const handleStatusChange = async () => {
@@ -50,8 +50,8 @@ export const CalendarDay: React.FC<CalendarDayProps> = ({ date }) => {
     await setDayStatus(date, nextStatus);
   };
 
-  if (!isCurrentMonth) {
-    return <div className="h-24 bg-gray-50 rounded-lg"></div>;
+  if (isOutsideMonth) {
+    return <div className="h-24 bg-gray-50 rounded-lg opacity-50"></div>;
   }
 
   const backgroundColor = getBackgroundColor(status, isWeekend, isHoliday);
