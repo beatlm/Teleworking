@@ -1,43 +1,33 @@
-import { startOfQuarter, endOfQuarter, eachDayOfInterval, isSameDay, isWeekend, format, getQuarter, startOfWeek, endOfWeek } from 'date-fns';
+import { startOfQuarter, endOfQuarter, eachDayOfInterval, isSameDay, isWeekend } from 'date-fns';
 import { WorkStatus } from '../types/calendar';
 import { getNationalHolidays, getMadridHolidays } from './holidays';
 
-const getQuarterBoundaries = (date: Date): { start: Date; end: Date } => {
+export interface QuarterStats {
+  totalWorkDays: number;
+  remoteDays: number;
+  percentage: number;
+}
+
+export const getDetailedQuarterStats = (date: Date, dayStatuses: Map<string, WorkStatus>): QuarterStats => {
+  const year = date.getFullYear();
+  const holidays = [...getNationalHolidays(year), ...getMadridHolidays(year)];
   const quarterStart = startOfQuarter(date);
   const quarterEnd = endOfQuarter(date);
   
-  // Adjust start to previous Monday if quarter doesn't start on Monday
-  const adjustedStart = startOfWeek(quarterStart, { weekStartsOn: 1 });
-  // Adjust end to next Sunday if quarter doesn't end on Sunday
-  const adjustedEnd = endOfWeek(quarterEnd, { weekStartsOn: 1 });
-  
-  return {
-    start: adjustedStart,
-    end: adjustedEnd
-  };
-};
-
-export const getQuarterStats = (date: Date, dayStatuses: Map<string, WorkStatus>): number => {
-  const year = date.getFullYear();
-  const holidays = [...getNationalHolidays(year), ...getMadridHolidays(year)];
-  const { start, end } = getQuarterBoundaries(date);
-  
-  const workDays = eachDayOfInterval({ start, end })
-    .filter(date => {
-      // Only count days within the actual quarter (not the extended week boundaries)
-      const actualQuarterStart = startOfQuarter(date);
-      const actualQuarterEnd = endOfQuarter(date);
-      const isInQuarter = date >= actualQuarterStart && date <= actualQuarterEnd;
-      
-      return isInQuarter && 
-             !isWeekend(date) && 
-             !holidays.some(holiday => isSameDay(date, holiday));
-    });
+  const workDays = eachDayOfInterval({ start: quarterStart, end: quarterEnd })
+    .filter(date => !isWeekend(date) && !holidays.some(holiday => isSameDay(date, holiday)));
   
   const remoteDays = workDays.filter(date => {
-    const dateKey = format(date, 'yyyy-MM-dd');
+    const dateKey = date.toISOString().split('T')[0];
     return dayStatuses.get(dateKey) === 'remote';
   }).length;
 
-  return workDays.length > 0 ? (remoteDays / workDays.length) * 100 : 0;
+  const totalWorkDays = workDays.length;
+  const percentage = totalWorkDays > 0 ? (remoteDays / totalWorkDays) * 100 : 0;
+
+  return {
+    totalWorkDays,
+    remoteDays,
+    percentage
+  };
 };

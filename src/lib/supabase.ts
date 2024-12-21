@@ -6,7 +6,7 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_API_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
-    'Missing Supabase credentials. Please check your .env file and ensure both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.'
+    'Missing Supabase credentials. Please check your .env file and ensure both VITE_SUPABASE_URL and VITE_SUPABASE_API_KEY are set.'
   );
 }
 

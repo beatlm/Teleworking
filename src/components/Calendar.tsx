@@ -1,26 +1,18 @@
 import React, { useEffect } from 'react';
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  startOfWeek,
-  endOfWeek,
-  getQuarter,
-  startOfQuarter,
-  isSameMonth
-} from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, getQuarter } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useCalendarStore } from '../store/calendarStore';
+import { useMonthNavigation } from '../hooks/useMonthNavigation';
 import { CalendarDay } from './CalendarDay';
-import { QuarterlyStats } from './QuarterlyStats';
+import { getDetailedQuarterStats } from '../utils/statistics';
 
 export const Calendar: React.FC = () => {
-  const { currentDate, nextMonth, previousMonth, fetchDayStatuses, isLoading, error } = useCalendarStore();
+  const { currentDate, setCurrentDate, isLoading, error, fetchCurrentYearStatuses, dayStatuses } = useCalendarStore();
+  const { nextMonth, previousMonth } = useMonthNavigation(currentDate, setCurrentDate);
 
   useEffect(() => {
-    fetchDayStatuses();
+    fetchCurrentYearStatuses();
   }, []);
 
   const monthStart = startOfMonth(currentDate);
@@ -34,8 +26,9 @@ export const Calendar: React.FC = () => {
     end: endOfWeek(calendarStart, { weekStartsOn: 1 })
   });
 
+  const stats = getDetailedQuarterStats(currentDate, dayStatuses);
+
   const currentQuarter = getQuarter(currentDate);
-  const quarterStart = startOfQuarter(currentDate);
 
   if (error) {
     return (
@@ -43,7 +36,7 @@ export const Calendar: React.FC = () => {
         <p className="font-semibold">Error al cargar los datos</p>
         <p className="text-sm mt-2">{error}</p>
         <button 
-          onClick={() => fetchDayStatuses()}
+          onClick={() => fetchCurrentYearStatuses()}
           className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
         >
           Reintentar
@@ -62,9 +55,7 @@ export const Calendar: React.FC = () => {
           </div>
         </div>
       )}
-      
-      <QuarterlyStats />
-      
+            
       <div className="flex items-center justify-between mb-8">
         <button
           onClick={previousMonth}
@@ -80,14 +71,25 @@ export const Calendar: React.FC = () => {
           <p className="text-sm text-gray-600 mt-1">
             {currentQuarter}º Trimestre
           </p>
+          <div
+              className="bg-blue-500 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${Math.max(0, Math.min(100, stats.percentage))}%` }}
+            />
+          <span className="text-sm font-medium text-gray-600 min-w-[3.5rem]">
+            {stats.percentage.toFixed(1)}%
+          </span>
+          
         </div>
+       
         <button
           onClick={nextMonth}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           disabled={isLoading}
         >
+          
           <ChevronRight className="w-6 h-6" />
         </button>
+        
       </div>
 
       <div className="grid grid-cols-7 gap-2 mb-2">
@@ -105,7 +107,7 @@ export const Calendar: React.FC = () => {
         {days.map((day) => (
           <CalendarDay 
             key={day.toString()} 
-            date={day} 
+            date={day}
             isOutsideMonth={!isSameMonth(day, currentDate)}
           />
         ))}
