@@ -39,9 +39,9 @@ const StatusIcon: React.FC<{ status: WorkStatus }> = ({ status }) => {
 export const CalendarDay: React.FC<CalendarDayProps> = ({ date, isOutsideMonth }) => {
   const { getDayStatus, setDayStatus, isLoading } = useCalendarStore();
   const { status, isWeekend, isHoliday } = getDayStatus(date);
-  
-  const dayNumber = format(date, 'd');
+  console.log('dayNumber: ',date, 'status:',status);
 
+  const dayNumber = format(date, 'd');
   const handleStatusChange = async () => {
     if (isWeekend || isHoliday || isLoading) return;
     const statusOrder: WorkStatus[] = ['office', 'remote', 'vacation'];

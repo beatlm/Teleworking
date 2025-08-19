@@ -7,11 +7,13 @@ export const useMonthNavigation = (
 ) => {
   const nextMonth = useCallback(async () => {
     const newDate = addMonths(currentDate, 1);
+
     await onDateChange(newDate);
   }, [currentDate, onDateChange]);
 
   const previousMonth = useCallback(async () => {
     const newDate = subMonths(currentDate, 1);
+
     await onDateChange(newDate);
   }, [currentDate, onDateChange]);
 

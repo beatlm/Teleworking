@@ -1,4 +1,4 @@
-import { startOfQuarter, endOfQuarter, eachDayOfInterval, isSameDay, isWeekend } from 'date-fns';
+import { getQuarter, getYear, startOfQuarter, endOfQuarter, eachDayOfInterval, isWeekend, isSameDay } from 'date-fns';
 import { WorkStatus } from '../types/calendar';
 import { getNationalHolidays, getMadridHolidays } from './holidays';
 
@@ -11,9 +11,11 @@ export interface QuarterStats {
 export const getDetailedQuarterStats = (date: Date, dayStatuses: Map<string, WorkStatus>): QuarterStats => {
   const year = date.getFullYear();
   const holidays = [...getNationalHolidays(year), ...getMadridHolidays(year)];
+  
+  // Usar directamente el inicio y fin del trimestre sin ajustar por semanas
   const quarterStart = startOfQuarter(date);
   const quarterEnd = endOfQuarter(date);
-  
+
   const workDays = eachDayOfInterval({ start: quarterStart, end: quarterEnd })
     .filter(date => !isWeekend(date) && !holidays.some(holiday => isSameDay(date, holiday)));
   

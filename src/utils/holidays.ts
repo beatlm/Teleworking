@@ -4,6 +4,8 @@ export const getNationalHolidays = (year: number = getYear(new Date())): Date[] 
   return [
     new Date(year, 0, 1),  // Año Nuevo
     new Date(year, 0, 6),  // Reyes Magos
+    new Date(year, 3, 18), // Jueves Santo
+
     new Date(year, 3, 19), // Viernes Santo
     new Date(year, 4, 1),  // Día del Trabajo
     new Date(year, 7, 15), // Asunción de la Virgen
